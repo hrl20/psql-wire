@@ -110,6 +110,7 @@ type Server struct {
 	logger          *slog.Logger
 	Auth            AuthStrategy
 	BackendKeyData  BackendKeyDataFunc
+	CancelRequest   CancelRequestFn
 	BufferedMsgSize int
 	Parameters      Parameters
 	TLSConfig       *tls.Config

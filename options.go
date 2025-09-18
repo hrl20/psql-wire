@@ -109,6 +109,11 @@ type PortalCache interface {
 
 type CloseFn func(ctx context.Context) error
 
+// CancelRequestFn function called when a cancel request is received.
+// The function receives the process ID and secret key from the cancel request.
+// It should return an error if the cancel request cannot be processed.
+type CancelRequestFn func(ctx context.Context, processID int32, secretKey int32) error
+
 // OptionFn options pattern used to define and set options for the given
 // PostgreSQL server.
 type OptionFn func(*Server) error
@@ -191,6 +196,16 @@ func SessionAuthStrategy(fn AuthStrategy) OptionFn {
 func BackendKeyData(fn BackendKeyDataFunc) OptionFn {
 	return func(srv *Server) error {
 		srv.BackendKeyData = fn
+		return nil
+	}
+}
+
+// CancelRequest sets the cancel request handler for the server.
+// This function is called when a client sends a cancel request with a process ID and secret key.
+// The handler should validate the credentials and cancel the appropriate query if valid.
+func CancelRequest(fn CancelRequestFn) OptionFn {
+	return func(srv *Server) error {
+		srv.CancelRequest = fn
 		return nil
 	}
 }
