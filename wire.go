@@ -202,17 +202,17 @@ func (srv *Server) serve(ctx context.Context, conn net.Conn) error {
 	// Each connection gets its own type map instance to prevent race conditions
 	// when multiple goroutines access the same map concurrently during query execution
 	connectionTypes := pgtype.NewMap()
-	
+
 	// Apply any type extension configured via ExtendTypes
 	if srv.typeExtension != nil {
 		srv.typeExtension(connectionTypes)
 	}
-	
+
 	ctx = setTypeInfo(ctx, connectionTypes)
 	ctx = setRemoteAddress(ctx, conn.RemoteAddr())
 	defer conn.Close()
 
-	srv.logger.Debug("serving a new client connection")
+	srv.logger.Info("serving a new client connection", slog.String("remote_addr", conn.RemoteAddr().String()))
 
 	conn, version, reader, err := srv.Handshake(conn)
 	if err != nil {
