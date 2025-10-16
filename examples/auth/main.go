@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"log"
-	"math/rand"
 	"os"
-	"time"
 
 	wire "github.com/jeroenrinzema/psql-wire"
 	"github.com/lib/pq/oid"
@@ -49,7 +47,6 @@ func NewPostgreServer(logger *log.Logger) (*PostgreServer, error) {
 	wireServer, err := wire.NewServer(
 		server.wireHandler,
 		wire.SessionAuthStrategy(wire.ClearTextPassword(server.auth)),
-		wire.BackendKeyData(server.backendKeyData),
 		wire.SessionMiddleware(server.session),
 		wire.TerminateConn(server.terminateConn),
 		wire.Version("17.0"),
@@ -86,21 +83,6 @@ func (s *PostgreServer) terminateConn(ctx context.Context) error {
 	return nil
 }
 
-// backendKeyData generates backend key data for query cancellation
-func (s *PostgreServer) backendKeyData(ctx context.Context) (int32, int32) {
-	// Generate a random process ID and secret key for demonstration
-	// In a real implementation, you might want to use actual process IDs
-	// and secure random generation for the secret key
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	processID := rng.Int31()
-	secretKey := rng.Int31()
-
-	s.logger.Printf("generated backend key data for %s: processID=%d, secretKey=%d",
-		wire.RemoteAddress(ctx), processID, secretKey)
-
-	return processID, secretKey
-}
-
 var table = wire.Columns{
 	{
 		Table: 0,
@@ -127,8 +109,8 @@ func (s *PostgreServer) wireHandler(ctx context.Context, query string) (wire.Pre
 	s.logger.Printf("incoming SQL query: %s", query)
 
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-		writer.Row([]any{"John", true, 29})
-		writer.Row([]any{"Marry", false, 21})
+		writer.Row([]any{"John", true, 29})   //nolint:errcheck
+		writer.Row([]any{"Marry", false, 21}) //nolint:errcheck
 		return writer.Complete("SELECT 2")
 	}
 
