@@ -219,6 +219,7 @@ func (srv *Session) handleCommand(ctx context.Context, conn net.Conn, t types.Cl
 		// https://github.com/postgres/postgres/blob/6e1dd2773eb60a6ab87b27b8d9391b756e904ac3/src/backend/tcop/postgres.c#L4295
 		return nil
 	case types.ClientClose:
+
 		writer.Start(types.ServerCloseComplete) //nolint:errcheck
 		writer.End()                            //nolint:errcheck
 		return nil
@@ -574,6 +575,14 @@ func (srv *Session) handleConnTerminate(ctx context.Context) error {
 	}
 
 	return srv.TerminateConn(ctx)
+}
+
+func (srv *Session) handleConnClose(ctx context.Context) error {
+	if srv.CloseConn == nil {
+		return nil
+	}
+
+	return srv.CloseConn(ctx)
 }
 
 func singleStatement(stmts PreparedStatements, err error) (*PreparedStatement, error) {

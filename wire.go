@@ -188,7 +188,7 @@ func (srv *Server) Serve(listener net.Listener) error {
 			err = srv.serve(ctx, conn)
 			if err != nil {
 				if srv.isNormalConnectionClosure(err) {
-					srv.logger.Debug("client connection closed", "err", err)
+					srv.logger.Info("client connection closed", "err", err)
 				} else {
 					srv.logger.Error("an unexpected error got returned while serving a client connection", "err", err)
 				}
@@ -202,12 +202,12 @@ func (srv *Server) serve(ctx context.Context, conn net.Conn) error {
 	// Each connection gets its own type map instance to prevent race conditions
 	// when multiple goroutines access the same map concurrently during query execution
 	connectionTypes := pgtype.NewMap()
-	
+
 	// Apply any type extension configured via ExtendTypes
 	if srv.typeExtension != nil {
 		srv.typeExtension(connectionTypes)
 	}
-	
+
 	ctx = setTypeInfo(ctx, connectionTypes)
 	ctx = setRemoteAddress(ctx, conn.RemoteAddr())
 	defer conn.Close()
@@ -267,7 +267,14 @@ func (srv *Server) serve(ctx context.Context, conn net.Conn) error {
 
 	ctx = context.WithValue(ctx, sessionKey, session)
 
-	return session.consumeCommands(ctx, conn, reader, writer)
+	err = session.consumeCommands(ctx, conn, reader, writer)
+
+	closeErr := session.handleConnClose(ctx)
+	if closeErr != nil {
+		srv.logger.Error("unexpected error while attempting to close the connection", "err", closeErr)
+	}
+
+	return err
 }
 
 // Close gracefully closes the underlaying Postgres server.
