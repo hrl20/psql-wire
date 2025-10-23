@@ -174,5 +174,5 @@ func (column Column) Write(ctx context.Context, writer *buffer.Writer, format Fo
 	writer.AddInt32(length)
 	writer.AddBytes(bb)
 
-	return nil
+	return writer.Error()
 }
