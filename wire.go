@@ -130,6 +130,7 @@ type Server struct {
 	ParallelPipeline ParallelPipelineConfig
 	Version          string
 	ShutdownTimeout  time.Duration
+	MaxConnLifetime  time.Duration
 	typeExtension    func(*pgtype.Map)
 	closer           chan struct{}
 }

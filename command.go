@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/jeroenrinzema/psql-wire/codes"
 	psqlerr "github.com/jeroenrinzema/psql-wire/errors"
@@ -77,8 +78,24 @@ func (srv *Session) consumeCommands(ctx context.Context, conn net.Conn, reader *
 
 	defer srv.Close()
 
+	if srv.MaxConnLifetime > 0 {
+		err = conn.SetReadDeadline(time.Now().Add(srv.MaxConnLifetime))
+		if err != nil {
+			return err
+		}
+	}
+
 	for {
-		if err = srv.consumeSingleCommand(ctx, reader, writer, conn); err != nil {
+		err = srv.consumeSingleCommand(ctx, reader, writer, conn)
+		if err != nil {
+			var netErr net.Error
+			if srv.MaxConnLifetime > 0 && errors.As(err, &netErr) && netErr.Timeout() {
+				fatalErr := psqlerr.WithSeverity(psqlerr.WithCode(
+					fmt.Errorf("terminating connection due to maximum connection lifetime (%s) exceeded", srv.MaxConnLifetime),
+					codes.AdminShutdown,
+				), psqlerr.LevelFatal)
+				_ = ErrorCode(writer, fatalErr)
+			}
 			return err
 		}
 	}

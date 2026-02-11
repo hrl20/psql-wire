@@ -281,6 +281,18 @@ func WithShutdownTimeout(timeout time.Duration) OptionFn {
 	}
 }
 
+// MaxConnLifetime sets the maximum lifetime of a connection. After the
+// configured duration has elapsed since the connection was established, the
+// server sends a fatal AdminShutdown error to the client and closes the
+// connection. This applies both to idle connections and connections between
+// commands. A zero value means connections are not closed due to age.
+func MaxConnLifetime(duration time.Duration) OptionFn {
+	return func(srv *Server) error {
+		srv.MaxConnLifetime = duration
+		return nil
+	}
+}
+
 // ExtendTypes provides the ability to extend the underlying connection types.
 // Types registered inside the given [github.com/jackc/pgx/v5/pgtype.Map] are
 // registered to all incoming connections.
